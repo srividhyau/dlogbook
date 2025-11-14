@@ -93,7 +93,7 @@
               let last = j.lastInTime 
                 ? new Date(j.lastInTime).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})
                 : "(no IN found)";
-              msg.textContent = "Recorded OUT at " + current + " (IN: " + last + ")";
+              msg.textContent = "Recorded OUT at " + current + "&nbsp;&nbsp; &nbsp;&nbsp;<B>IN: " + last + "<B/>";
           }
      }
     } catch(e){
