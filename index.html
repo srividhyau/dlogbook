@@ -86,7 +86,7 @@
         // sheetTime is ISO string of exact cell saved in sheet
             const sheetTime = j.sheetTime ? new Date(j.sheetTime) : new Date();
             const niceSheetTime = sheetTime.toLocaleString([], { hour: '2-digit', minute: '2-digit', year:'numeric', month:'short', day:'numeric' });
-            alert(j)
+
             if (j.action === 'in') {
                 msg.textContent = 'Recorded IN at ' + niceSheetTime;
             } else if (j.action === 'out') {
@@ -95,7 +95,7 @@
                    const lastIn = new Date(j.lastInSheetTime);
                    lastInNice = lastIn.toLocaleString([], { hour: '2-digit', minute: '2-digit', year:'numeric', month:'short', day:'numeric' });
                 }
-                msg.textContent = 'Recorded OUT at ' + niceSheetTime + '\nRecorded IN at ' + lastInNice;
+                msg.htmlContent = 'Recorded OUT at ' + niceSheetTime + '<BR/>Recorded IN at ' + lastInNice;
             } else {
                 msg.textContent = 'Recorded at ' + niceSheetTime;
             }
