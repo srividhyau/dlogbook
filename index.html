@@ -95,7 +95,7 @@
                    const lastIn = new Date(j.lastInSheetTime);
                    lastInNice = lastIn.toLocaleString([], { hour: '2-digit', minute: '2-digit', year:'numeric', month:'short', day:'numeric' });
                 }
-                msg.htmlContent = 'Recorded OUT at ' + niceSheetTime + '<BR/>Recorded IN at ' + lastInNice;
+                msg.innerHTML = 'Recorded OUT at ' + niceSheetTime + '<BR/>Recorded IN at ' + lastInNice;
             } else {
                 msg.textContent = 'Recorded at ' + niceSheetTime;
             }
