@@ -1,207 +1,82 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Car Attendance</title>
-  <link rel="manifest" href="/manifest.json">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background:#f7f8fa; color:#111; }
-    header{ display:flex; align-items:center; gap:12px; }
-    h1{ font-size:20px; margin:0; }
-    .card{ background:#fff; padding:12px; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.08); margin-top:12px; }
-    button{ padding:10px 12px; border-radius:8px; border:0; background:#0b79d0; color:white; font-weight:600; }
-    input{ padding:10px; border-radius:6px; border:1px solid #ddd; width:100%; box-sizing:border-box; }
-    #reader { width:100%; min-height:200px; background:#000; border-radius:8px; overflow:hidden; }
-    small { color:#666; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Attendance</title>
+<link rel="manifest" href="manifest.json">
+<style>
+ body{font-family:Arial;padding:20px}
+ button{padding:10px 14px;background:#0b79d0;color:#fff;border:0;border-radius:6px}
+</style>
 </head>
 <body>
-  <header>
-    <img src="icons/icon-72.png" width="40" height="40" alt="">
-    <h1>Car Attendance</h1>
-  </header>
+<h2>Driver Attendance</h2>
+<p><b>Driver:</b> <span id="driverDisplay">—</span></p>
 
-  <div class="card">
-    <p><strong>Driver:</strong> <span id="driverDisplay">—</span></p>
-    <div id="setNameArea">
-      <input id="driverName" placeholder="Enter your name (saved on this device)" />
-      <div style="height:8px"></div>
-      <button id="saveNameBtn">Save name</button>
-    </div>
-    <div style="height:12px"></div>
-    <button id="changeNameBtn" style="display:none">Change name</button>
-  </div>
+<div id="nameArea">
+  <input id="driverName" placeholder="Enter your name" style="padding:10px;width:100%;margin-top:10px">
+  <button id="saveName" style="margin-top:10px">Save</button>
+</div>
 
-  <div class="card">
-    <p><strong>Scan QR</strong></p>
-    <div id="reader"></div>
-    <div style="height:12px"></div>
-    <button id="startScan">Start Camera Scan</button>
-    <button id="stopScan" style="display:none">Stop Scan</button>
-    <p><small>Or paste QR text / Car ID below:</small></p>
-    <input id="manualInput" placeholder="e.g. CAR001 or full URL" />
-    <div style="height:8px"></div>
-    <button id="manualSubmit">Submit</button>
-    <div id="status" style="margin-top:12px;color:#0a5;"></div>
-    <div id="error" style="margin-top:12px;color:#a00;"></div>
-  </div>
+<div id="msg" style="margin-top:20px;color:green"></div>
+<div id="err" style="margin-top:20px;color:red"></div>
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  <script>
-    // === CONFIG: set your Apps Script web app URL and token here ===
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzyrnoZnI7XsqAHvo8JYoF1Sl70MrDNEPNTXjaFTJ0hnAcizQF5T9C8DbDiKQiM4ooB/exec"; // e.g. https://script.google.com/macros/s/AKfy.../exec
-    const SECRET_TOKEN = "rT7v9Kp3LmQ2Zx8VbH1sF4NcY6Ua0WqP";
+<script>
+// CONFIG
+const WEB_APP_URL="https://script.google.com/macros/s/AKfycbzyrnoZnI7XsqAHvo8JYoF1Sl70MrDNEPNTXjaFTJ0hnAcizQF5T9C8DbDiKQiM4ooB/exec";
+const SECRET="rT7v9Kp3LmQ2Zx8VbH1sF4NcY6Ua0WqP";
 
-    // Save/Load driver name in localStorage
-    const key = "driverName";
-    const driverDisplay = document.getElementById('driverDisplay');
-    const nameInput = document.getElementById('driverName');
-    const saveNameBtn = document.getElementById('saveNameBtn');
-    const changeNameBtn = document.getElementById('changeNameBtn');
-    const setNameArea = document.getElementById('setNameArea');
-    const statusEl = document.getElementById('status');
-    const errorEl = document.getElementById('error');
+// driver name handling
+const key="driverName";
+const dDisp=document.getElementById("driverDisplay");
+const nameArea=document.getElementById("nameArea");
+const msg=document.getElementById("msg");
+const err=document.getElementById("err");
 
-    function setDriverUI(name){
-      if(name){
-        driverDisplay.innerText = name;
-        setNameArea.style.display = 'none';
-        changeNameBtn.style.display = 'inline-block';
-      } else {
-        driverDisplay.innerText = '—';
-        setNameArea.style.display = 'block';
-        changeNameBtn.style.display = 'none';
-      }
-    }
+function setDriverUI(n){
+  if(n){ dDisp.textContent=n; nameArea.style.display="none"; }
+  else{ dDisp.textContent="—"; nameArea.style.display="block"; }
+}
+setDriverUI(localStorage.getItem(key));
 
-    const stored = localStorage.getItem(key);
-    setDriverUI(stored);
+document.getElementById("saveName").onclick=()=>{
+  const v=document.getElementById("driverName").value.trim();
+  if(!v){alert("Enter name");return;}
+  localStorage.setItem(key,v);
+  setDriverUI(v);
+};
 
-    saveNameBtn.onclick = () => {
-      const v = nameInput.value.trim();
-      if(!v){ alert('Enter a name'); return; }
-      localStorage.setItem(key, v);
-      nameInput.value = '';
+// extract ?car=
+const params=new URLSearchParams(location.search);
+if(params.has("car")){
+  const car=params.get("car");
+  const driver=localStorage.getItem(key);
+
+  if(driver){
+    send(car,driver);
+  }else{
+    document.getElementById("saveName").onclick=()=>{
+      const v=document.getElementById("driverName").value.trim();
+      if(!v){alert("Enter name");return;}
+      localStorage.setItem(key,v);
       setDriverUI(v);
-    };
-    changeNameBtn.onclick = () => {
-      localStorage.removeItem(key);
-      setDriverUI(null);
-    };
-
-    // Extract car id from scanned text or URL
-    function extractCarId(text){
-      try{
-        const u = new URL(text);
-        // try search params
-        const p = u.searchParams.get('car');
-        if(p) return p;
-        // fallback: entire path or last segment
-        return u.pathname.split('/').filter(Boolean).pop() || text;
-      }catch(e){
-        // not a URL: assume direct car id
-        return text.trim();
-      }
+      send(car,v);
     }
+  }
+}
 
-    // Send attendance to web app
-    async function sendAttendance(carId){
-      errorEl.innerText = '';
-      statusEl.innerText = 'Sending...';
-      const driver = localStorage.getItem(key) || '';
-      if(!driver){
-        errorEl.innerText = 'Driver name not set. Please enter and save your name first.';
-        statusEl.innerText = '';
-        return;
-      }
-      try{
-        const url = WEB_APP_URL + '?car=' + encodeURIComponent(carId) + '&driver=' + encodeURIComponent(driver) + '&tok=' + encodeURIComponent(SECRET_TOKEN);
-        const resp = await fetch(url);
-        const text = await resp.text();
-        if(resp.ok){
-          statusEl.innerText = 'Recorded: ' + new Date().toLocaleString();
-        } else {
-          errorEl.innerText = 'Server error: ' + text;
-        }
-      } catch (err){
-        errorEl.innerText = 'Network error: ' + err.toString();
-      }
-    }
-
-    // Manual submit
-    document.getElementById('manualSubmit').onclick = () => {
-      const t = document.getElementById('manualInput').value.trim();
-      if(!t) return alert('Enter Car ID or URL');
-      const car = extractCarId(t);
-      sendAttendance(car);
-    };
-
-    // Handle optional ?car= in URL (when opening link via QR that contains web app URL)
-    const urlParams = new URLSearchParams(window.location.search);
-    if(urlParams.has('car')){
-      const carFromUrl = urlParams.get('car');
-      // if driver known, auto-send
-      if(localStorage.getItem(key)){
-        sendAttendance(carFromUrl);
-      } else {
-        // prefill name input and allow saving
-        nameInput.value = '';
-        setNameArea.style.display = 'block';
-        saveNameBtn.onclick = () => {
-          const v = nameInput.value.trim();
-          if(!v) { alert('Enter name'); return; }
-          localStorage.setItem(key, v);
-          setDriverUI(v);
-          // now send
-          sendAttendance(carFromUrl);
-        };
-      }
-    }
-
-    // === QR Scanner using html5-qrcode ===
-    let scanner = null;
-    const startScanBtn = document.getElementById('startScan');
-    const stopScanBtn = document.getElementById('stopScan');
-    startScanBtn.onclick = async () => {
-      errorEl.innerText = '';
-      statusEl.innerText = 'Starting camera...';
-      const div = document.getElementById('reader');
-      if(scanner) return;
-      scanner = new Html5Qrcode("reader");
-      try{
-        await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-          (decodedText, decodedResult) => {
-            // success - stop and send
-            stopScanner();
-            const car = extractCarId(decodedText);
-            sendAttendance(car);
-          },
-          (errorMessage) => {
-            // ignore scan errors
-          }
-        );
-        startScanBtn.style.display = 'none';
-        stopScanBtn.style.display = 'inline-block';
-        statusEl.innerText = 'Scanning...';
-      }catch(err){
-        errorEl.innerText = 'Camera error: ' + err.toString();
-        statusEl.innerText = '';
-      }
-    };
-    stopScanBtn.onclick = () => { stopScanner(); };
-
-    async function stopScanner(){
-      if(scanner){
-        try{ await scanner.stop(); }catch(e){}
-        try{ scanner.clear(); }catch(e){}
-        scanner = null;
-      }
-      startScanBtn.style.display = 'inline-block';
-      stopScanBtn.style.display = 'none';
-      statusEl.innerText = '';
-    }
-
-  </script>
+async function send(car,driver){
+  msg.textContent="Sending...";
+  err.textContent="";
+  try{
+    const url=WEB_APP_URL+"?car="+encodeURIComponent(car)+"&driver="+encodeURIComponent(driver)+"&tok="+SECRET;
+    const r=await fetch(url);
+    const t=await r.text();
+    if(r.ok){ msg.textContent="Recorded at "+new Date().toLocaleString(); }
+    else{ err.textContent="Server error: "+t; }
+  }catch(e){ err.textContent="Network error: "+e; }
+}
+</script>
 </body>
 </html>
