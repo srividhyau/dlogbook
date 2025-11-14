@@ -103,7 +103,11 @@
       } else {
         err.textContent = 'Unexpected response: ' + txt;
       }
+    } catch(e){
+      err.textContent = 'Network error: ' + e.toString();
+      msg.textContent = '';
     }
+  }
 </script>
 </body>
 </html>
