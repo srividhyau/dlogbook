@@ -6,77 +6,92 @@
 <title>Attendance</title>
 <link rel="manifest" href="manifest.json">
 <style>
- body{font-family:Arial;padding:20px}
+ body{font-family:Arial;padding:20px;background:#f7f8fa}
+ .card{background:#fff;padding:14px;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,0.08);margin-bottom:12px}
  button{padding:10px 14px;background:#0b79d0;color:#fff;border:0;border-radius:6px}
 </style>
 </head>
 <body>
-<h2>Driver Attendance</h2>
-<p><b>Driver:</b> <span id="driverDisplay">—</span></p>
-
-<div id="nameArea">
-  <input id="driverName" placeholder="Enter your name" style="padding:10px;width:100%;margin-top:10px">
-  <button id="saveName" style="margin-top:10px">Save</button>
-</div>
-
-<div id="msg" style="margin-top:20px;color:green"></div>
-<div id="err" style="margin-top:20px;color:red"></div>
+  <div class="card">
+    <h3>Driver Attendance</h3>
+    <p><b>Driver:</b> <span id="driverDisplay">—</span></p>
+    <div id="nameArea">
+      <input id="driverName" placeholder="Enter your name" style="padding:10px;width:100%;margin-top:10px">
+      <div style="height:10px"></div>
+      <button id="saveName">Save name</button>
+    </div>
+    <div id="msg" style="margin-top:12px;color:green"></div>
+    <div id="err" style="margin-top:12px;color:red"></div>
+  </div>
 
 <script>
-// CONFIG
-const WEB_APP_URL="https://script.google.com/macros/s/AKfycbzyrnoZnI7XsqAHvo8JYoF1Sl70MrDNEPNTXjaFTJ0hnAcizQF5T9C8DbDiKQiM4ooB/exec";
-const SECRET="rT7v9Kp3LmQ2Zx8VbH1sF4NcY6Ua0WqP";
+  // CONFIG - replace WEB_APP_URL after deploying Apps Script
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzyrnoZnI7XsqAHvo8JYoF1Sl70MrDNEPNTXjaFTJ0hnAcizQF5T9C8DbDiKQiM4ooB/exec";
+  const SECRET_TOKEN = "rT7v9Kp3LmQ2Zx8VbH1sF4NcY6Ua0WqP";
 
-// driver name handling
-const key="driverName";
-const dDisp=document.getElementById("driverDisplay");
-const nameArea=document.getElementById("nameArea");
-const msg=document.getElementById("msg");
-const err=document.getElementById("err");
+  const key = "driverName";
+  const dDisp = document.getElementById("driverDisplay");
+  const nameArea = document.getElementById("nameArea");
+  const msg = document.getElementById("msg");
+  const err = document.getElementById("err");
+  const nameInp = document.getElementById("driverName");
 
-function setDriverUI(n){
-  if(n){ dDisp.textContent=n; nameArea.style.display="none"; }
-  else{ dDisp.textContent="—"; nameArea.style.display="block"; }
-}
-setDriverUI(localStorage.getItem(key));
+  function setDriverUI(n){
+    if(n){ dDisp.textContent = n; nameArea.style.display='none'; }
+    else{ dDisp.textContent='—'; nameArea.style.display='block'; }
+  }
+  setDriverUI(localStorage.getItem(key));
+  document.getElementById("saveName").onclick = function(){
+    const v = nameInp.value.trim();
+    if(!v){ alert("Enter name"); return; }
+    localStorage.setItem(key, v);
+    setDriverUI(v);
+  };
 
-document.getElementById("saveName").onclick=()=>{
-  const v=document.getElementById("driverName").value.trim();
-  if(!v){alert("Enter name");return;}
-  localStorage.setItem(key,v);
-  setDriverUI(v);
-};
-
-// extract ?car=
-const params=new URLSearchParams(location.search);
-if(params.has("car")){
-  const car=params.get("car");
-  const driver=localStorage.getItem(key);
-
-  if(driver){
-    send(car,driver);
-  }else{
-    document.getElementById("saveName").onclick=()=>{
-      const v=document.getElementById("driverName").value.trim();
-      if(!v){alert("Enter name");return;}
-      localStorage.setItem(key,v);
-      setDriverUI(v);
-      send(car,v);
+  // get car from URL
+  const params = new URLSearchParams(window.location.search);
+  if(params.has('car')){
+    const car = params.get('car');
+    const driver = localStorage.getItem(key);
+    if(driver){
+      send(car, driver);
+    } else {
+      // when user saves name, send automatically
+      document.getElementById("saveName").onclick = function(){
+        const v = nameInp.value.trim();
+        if(!v){ alert("Enter name"); return; }
+        localStorage.setItem(key, v);
+        setDriverUI(v);
+        send(car, v);
+      };
     }
   }
-}
 
-async function send(car,driver){
-  msg.textContent="Sending...";
-  err.textContent="";
-  try{
-    const url=WEB_APP_URL+"?car="+encodeURIComponent(car)+"&driver="+encodeURIComponent(driver)+"&tok="+SECRET;
-    const r=await fetch(url);
-    const t=await r.text();
-    if(r.ok){ msg.textContent="Recorded at "+new Date().toLocaleString(); }
-    else{ err.textContent="Server error: "+t; }
-  }catch(e){ err.textContent="Network error: "+e; }
-}
+  async function send(car, driver){
+    err.textContent = '';
+    msg.textContent = 'Sending...';
+    try{
+      const url = WEB_APP_URL + '?car=' + encodeURIComponent(car) + '&driver=' + encodeURIComponent(driver) + '&tok=' + encodeURIComponent(SECRET_TOKEN);
+      const r = await fetch(url);
+      const txt = await r.text();
+      if(!r.ok){
+        err.textContent = 'Server error: ' + txt;
+        msg.textContent = '';
+        return;
+      }
+      // parse JSON if possible
+      let j = null;
+      try{ j = JSON.parse(txt); }catch(e){ j = null; }
+      if(j && j.status === 'ok'){
+        msg.textContent = 'Recorded ' + (j.action || '') + ' at ' + new Date(j.time).toLocaleString();
+      } else {
+        msg.textContent = 'Recorded';
+      }
+    } catch(e){
+      err.textContent = 'Network error: ' + e.toString();
+      msg.textContent = '';
+    }
+  }
 </script>
 </body>
 </html>
