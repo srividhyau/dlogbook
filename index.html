@@ -75,30 +75,30 @@
         const r = await fetch(url);
         const txt = await r.text();
         if(!r.ok){
-        err.textContent = 'Server error: ' + txt;
-        msg.textContent = '';
-        return;
+          err.textContent = 'Server error: ' + txt;
+          msg.textContent = '';
+          return;
         }
         let j = null;
         try { j = JSON.parse(txt); } catch(e) { j = null; }
 
         if (j && j.status === 'ok') {
         // sheetTime is ISO string of exact cell saved in sheet
-        const sheetTime = j.sheetTime ? new Date(j.sheetTime) : new Date();
-        const niceSheetTime = sheetTime.toLocaleString([], { hour: '2-digit', minute: '2-digit', year:'numeric', month:'short', day:'numeric' });
-
-        if (j.action === 'in') {
-            msg.textContent = 'Recorded IN at ' + niceSheetTime;
-        } else if (j.action === 'out') {
-            let lastInNice = '(no IN found)';
-            if (j.lastInSheetTime) {
-            const lastIn = new Date(j.lastInSheetTime);
-            lastInNice = lastIn.toLocaleString([], { hour: '2-digit', minute: '2-digit', year:'numeric', month:'short', day:'numeric' });
+            const sheetTime = j.sheetTime ? new Date(j.sheetTime) : new Date();
+            const niceSheetTime = sheetTime.toLocaleString([], { hour: '2-digit', minute: '2-digit', year:'numeric', month:'short', day:'numeric' });
+            alert(j)
+            if (j.action === 'in') {
+                msg.textContent = 'Recorded IN at ' + niceSheetTime;
+            } else if (j.action === 'out') {
+                let lastInNice = '(no IN found)';
+                if (j.lastInSheetTime) {
+                   const lastIn = new Date(j.lastInSheetTime);
+                   lastInNice = lastIn.toLocaleString([], { hour: '2-digit', minute: '2-digit', year:'numeric', month:'short', day:'numeric' });
+                }
+                msg.textContent = 'Recorded OUT at ' + niceSheetTime + ' (IN: ' + lastInNice + ')';
+            } else {
+                msg.textContent = 'Recorded at ' + niceSheetTime;
             }
-            msg.textContent = 'Recorded OUT at ' + niceSheetTime + ' (IN: ' + lastInNice + ')';
-        } else {
-            msg.textContent = 'Recorded at ' + niceSheetTime;
-        }
         } else {
         err.textContent = 'Unexpected response: ' + txt;
         }
