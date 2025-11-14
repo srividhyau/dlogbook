@@ -82,11 +82,20 @@
       // parse JSON if possible
       let j = null;
       try{ j = JSON.parse(txt); }catch(e){ j = null; }
-      if(j && j.status === 'ok'){
-        msg.textContent = 'Recorded ' + (j.action || '') + ' at ' + new Date(j.time).toLocaleString();
-      } else {
-        msg.textContent = 'Recorded';
-      }
+
+     if (j && j.status === 'ok') {
+          let current = new Date(j.currentTime).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+          
+          if (j.action === "in") {
+              msg.textContent = "Recorded IN at " + current;
+          } 
+          else if (j.action === "out") {
+              let last = j.lastInTime 
+                ? new Date(j.lastInTime).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})
+                : "(no IN found)";
+              msg.textContent = "Recorded OUT at " + current + " (IN: " + last + ")";
+          }
+     }
     } catch(e){
       err.textContent = 'Network error: ' + e.toString();
       msg.textContent = '';
